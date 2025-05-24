@@ -1,0 +1,21 @@
+# API
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+# RAG stack
+langchain==0.3.27
+langchain-community==0.3.27
+langchain-chroma==0.2.4
+langchain-huggingface==0.3.0
+langchain-openai==0.3.28
+langchain-text-splitters==0.3.4
+chromadb==0.5.23
+sentence-transformers==3.3.1
+
+# Web crawling
+beautifulsoup4==4.12.3
+requests==2.32.3
+
+# Config
+python-dotenv==1.0.1
