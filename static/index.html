@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Website Q&A (RAG)</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+    h1 { font-size: 1.4rem; }
+    input, button, textarea { font: inherit; padding: .55rem .7rem; border-radius: 8px; border: 1px solid #8884; }
+    input, textarea { width: 100%; box-sizing: border-box; margin: .3rem 0 .8rem; }
+    button { cursor: pointer; background: #2b6cb0; color: #fff; border: 0; }
+    button:disabled { opacity: .6; cursor: progress; }
+    .row { display: flex; gap: .5rem; }
+    .row input { flex: 1; }
+    #answer { white-space: pre-wrap; background: #8881; padding: 1rem; border-radius: 10px; margin-top: 1rem; }
+    .sources a { display: block; font-size: .9rem; }
+    .muted { color: #8889; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <h1>🔎 Ask a website (RAG)</h1>
+  <p class="muted">Crawl a site, then ask questions answered only from its pages, with source links.</p>
+
+  <label>1 · Site URL to crawl</label>
+  <div class="row">
+    <input id="url" placeholder="https://example.com" />
+    <button id="crawlBtn" onclick="crawl()">Crawl</button>
+  </div>
+  <div id="crawlStatus" class="muted"></div>
+
+  <label>2 · Your question</label>
+  <textarea id="q" rows="2" placeholder="What is this site about?"></textarea>
+  <button id="askBtn" onclick="ask()">Ask</button>
+
+  <div id="answer" hidden></div>
+  <div id="sources" class="sources"></div>
+
+<script>
+async function crawl() {
+  const url = document.getElementById('url').value.trim();
+  if (!url) return;
+  const btn = document.getElementById('crawlBtn');
+  const status = document.getElementById('crawlStatus');
+  btn.disabled = true; status.textContent = 'Crawling…';
+  try {
+    const r = await fetch('/ingest', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ url })
+    });
+    const data = await r.json();
+    status.textContent = r.ok ? `Indexed ${data.chunks} chunks ✅` : `Error: ${data.detail}`;
+  } catch (e) { status.textContent = 'Error: ' + e; }
+  btn.disabled = false;
+}
+
+async function ask() {
+  const question = document.getElementById('q').value.trim();
+  if (!question) return;
+  const btn = document.getElementById('askBtn');
+  const ans = document.getElementById('answer');
+  const src = document.getElementById('sources');
+  btn.disabled = true; ans.hidden = false; ans.textContent = 'Thinking…'; src.innerHTML = '';
+  try {
+    const r = await fetch('/ask', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ question })
+    });
+    const data = await r.json();
+    if (!r.ok) { ans.textContent = 'Error: ' + data.detail; }
+    else {
+      ans.textContent = data.answer;
+      src.innerHTML = '<strong>Sources</strong>' +
+        data.sources.map(s => `<a href="${s.url}" target="_blank">${s.title}</a>`).join('');
+    }
+  } catch (e) { ans.textContent = 'Error: ' + e; }
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
